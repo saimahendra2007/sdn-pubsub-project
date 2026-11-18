@@ -25,13 +25,22 @@ if __name__ == "__main__":
     ap.add_argument("--interval", type=float, default=0.5, help="seconds between msgs")
     ap.add_argument("--msg", default="hello")
     ap.add_argument("--name", default="pub")
+    ap.add_argument("-v", "--verbose", action="store_true", help="print every message sent")
     a = ap.parse_args()
 
     s = connect(a.broker, a.port)
+    s.sendall(f"HELLO|pub|{a.name}\n".encode())   # lets the broker list us in its table
+    t0, sent_bytes = time.time(), 0
     for i in range(a.count):
         # timestamp lets the subscriber compute one-way latency
-        line = f"PUBLISH|{a.topic}|{time.time():.6f}|{a.name}-{i}: {a.msg}\n"
-        s.sendall(line.encode())
+        payload = f"{a.name}-{i}: {a.msg}"
+        s.sendall(f"PUBLISH|{a.topic}|{time.time():.6f}|{payload}\n".encode())
+        sent_bytes += len(payload.encode())
+        if a.verbose:
+            print(f"{time.strftime('%H:%M:%S')}  [{a.name}] -> {a.topic:<10} {payload}")
         time.sleep(a.interval)
+    elapsed = max(time.time() - t0, 1e-9)
+    time.sleep(0.1)                # let the broker drain before we close
     s.close()
-    print(f"[{a.name}] sent {a.count} messages on '{a.topic}'")
+    print(f"[{a.name}] sent {a.count} msgs ({sent_bytes} B) on '{a.topic}' "
+          f"in {elapsed:.2f}s = {a.count / elapsed:.1f} msg/s")
