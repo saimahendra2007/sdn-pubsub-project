@@ -95,6 +95,8 @@ def run_test(net):
     print("Expected: sub1 gets 30 msgs (news 20 + alerts 10), "
           "sub2 gets 20 (news), sub3 gets 10 (alerts).")
     print("Latency CSVs saved in %s/" % RESULTS)
+    print("\n=== Demo 2: broker pub/sub table + statistics ===")
+    print(pubs[0].cmd("python3 %s/stats.py --broker %s --port %d" % (HERE, BROKER_IP, PORT)))
     print("\n=== Flow table on s1 (what the controller installed) ===")
     print(net.get("s1").cmd("ovs-ofctl -O OpenFlow13 dump-flows s1"))
 
